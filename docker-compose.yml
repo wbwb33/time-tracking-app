@@ -1,6 +1,39 @@
 version: "3.3"
 
 services: 
+  proxy:
+    image: traefik:v2.2
+    ports:
+      - "80:80"
+      - "8090:8080"
+    networks:
+      - ${TRAEFIK_PUBLIC_NETWORK?Variable not set}
+      - default
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      # Enable Docker in Traefik, so that it reads labels from Docker services
+      - --providers.docker
+      # Add a constraint to only use services with the label for this stack
+      # from the env var TRAEFIK_TAG
+      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
+      # Do not expose all Docker services, only the ones explicitly exposed
+      - --providers.docker.exposedbydefault=false
+      # Disable Docker Swarm mode for local development
+      # - --providers.docker.swarmmode
+      # Enable the access log, with HTTP requests
+      - --accesslog
+      # Enable the Traefik log, for configurations and errors
+      - --log
+      # Enable the Dashboard and API
+      - --api
+      # Enable the Dashboard and API in insecure mode for local development
+      - --api.insecure=true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${STACK_NAME?Variable not set}-traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-traefik-public.loadbalancer.server.port=80
+
   db:
     image: postgres:12
     volumes:
@@ -13,15 +46,15 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     ports:
-      - "8080:8080"
+      - "5050:5050"
     depends_on:
       - db
     env_file:
       - .env
 
-  server:
+  backend:
     ports:
-      - "80:80"
+      - "8888:80"
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -31,17 +64,30 @@ services:
       - db
     env_file:
       - .env
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
     
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     depends_on:
-      - server
+      - backend
     env_file:
       - .env
-    ports:
-      - "8888:8888"
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=PathPrefix(`/`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
 
 volumes:
   db-data:
+
+networks:
+  traefik-public:
+    # Allow setting it to false for testing
+    external: false
