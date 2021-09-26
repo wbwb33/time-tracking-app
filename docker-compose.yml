@@ -1,0 +1,47 @@
+version: "3.3"
+
+services: 
+  db:
+    image: postgres:12
+    volumes:
+      - db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  server:
+    ports:
+      - "80:80"
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    depends_on:
+      - db
+    env_file:
+      - .env
+    
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - server
+    env_file:
+      - .env
+    ports:
+      - "8888:8888"
+
+volumes:
+  db-data:
