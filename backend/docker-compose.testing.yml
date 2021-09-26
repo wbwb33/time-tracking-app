@@ -1,0 +1,25 @@
+version: "3.3"
+
+services: 
+  db:
+    image: postgres:12
+    volumes:
+      - db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+
+  tester:
+    build:
+      context: ./
+      dockerfile: Dockerfile.testing
+    depends_on:
+      - db
+    env_file:
+      - .env
+    command:
+      - pytest
+
+volumes:
+  db-data:
