@@ -33,7 +33,11 @@ PGAdmin, PostgreSQL web administration: http://localhost:5050
 
 ## App Overview
 
+### Add new task
 [![new-task.gif](https://s9.gifyu.com/images/new-task.gif)](https://gifyu.com/image/PBhQ)
+
+### Filter feature
+[![filter.gif](https://s9.gifyu.com/images/filter.gif)](https://gifyu.com/image/POo5)
 
 ## Unit Testing
 
