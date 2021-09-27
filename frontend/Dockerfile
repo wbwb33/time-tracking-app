@@ -1,18 +1,21 @@
-FROM node:12-alpine
+FROM node:12-alpine as builder
 
-ENV NUXT_VERSION=2.15.7
+WORKDIR /build
 
-WORKDIR /app
-
-COPY package.json package-lock.json /app/
+COPY package.json package-lock.json /build/
 RUN npm install
 
-COPY . /app
+COPY . /build
 RUN npm run generate
-RUN rm -rf node_modules
-RUN rm package.json package-lock.json
-RUN yarn add "nuxt-start@${NUXT_VERSION}"
-RUN yarn cache clean
 
-ENTRYPOINT ["npx", "nuxt-start"]
+
+
+FROM node:12-alpine as app
+
+RUN npm install -g "http-server@13.0.2"
+
+WORKDIR /app
+COPY --from=builder /build/dist /app/public
+
+ENTRYPOINT ["http-server", "-p", "80"]
 EXPOSE 80

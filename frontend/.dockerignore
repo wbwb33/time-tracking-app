@@ -1,4 +1,6 @@
 .git
+.nuxt
+coverage
 node_modules
 Dockerfile
 .dockerignore
