@@ -32,4 +32,7 @@ docker-compose up
 
 
 ### Frontend tests
-ongoing
+```bash
+$ npm install
+$ npm run test
+```
