@@ -4,8 +4,10 @@
       :clipped-left="clipped"
       fixed
       flat
-      color="transparent"
+      color="white"
       app
+      hide-on-scroll
+      dense
       style="padding-left: 10vw;padding-right: 10vw"
     >
       <v-toolbar-title v-text="title" />

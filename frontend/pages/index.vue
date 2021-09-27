@@ -5,8 +5,11 @@
         <v-data-table
           :headers="headers"
           :items="tasks"
+          item-key="title"
           sort-by="start_time"
           class="elevation-1"
+          :search="search"
+          :custom-filter="filterOnlyLowText"
         >
           <template v-slot:top>
             <v-toolbar flat>
@@ -202,6 +205,27 @@
             <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
           </template>
           <template v-slot:no-data> There is no task in this date </template>
+          <template v-slot:[`body.append`]>
+            <tr>
+              <td>
+                <v-text-field
+                  v-model="search"
+                  label="Search (LOWER CASE ONLY)"
+                  class="mx-4"
+                ></v-text-field>
+              </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>
+                <v-text-field
+                  v-model="durationFilter"
+                  type="number"
+                  label="Longer than"
+                ></v-text-field>
+              </td>
+            </tr>
+          </template>
         </v-data-table>
       </v-card>
     </v-col>
@@ -225,25 +249,14 @@ export default Vue.extend({
   data() {
     let tasks: IData[] = []
     return {
+      durationFilter: 0,
+      search: '',
       dateToFilter: '',
       dialogPickerDateToFilterStatus: false,
       totalDuration: '0',
       datePicker: false,
       dialog: false,
       dialogDelete: false,
-      headers: [
-        {
-          text: 'Name',
-          align: 'start',
-          sortable: false,
-          value: 'title',
-        },
-        { text: 'Date', value: 'task_date' },
-        { text: 'Start', value: 'start_time' },
-        { text: 'End', value: 'end_time' },
-        { text: 'Duration (in Sec)', value: 'duration' },
-        { text: 'Actions', value: 'actions', sortable: false },
-      ],
       tasks,
       editedIndex: -1,
       editedItem: {
@@ -266,6 +279,28 @@ export default Vue.extend({
   },
 
   computed: {
+    headers() {
+      return [
+        {
+          text: 'Name',
+          align: 'start',
+          sortable: false,
+          value: 'title',
+        },
+        { text: 'Date', value: 'task_date' },
+        { text: 'Start', value: 'start_time' },
+        { text: 'End', value: 'end_time' },
+        { 
+          text: 'Duration (in Sec)', 
+          value: 'duration',
+          filter: (value: number) => {
+            if (!this.durationFilter) return true
+            return value > this.durationFilter
+          },
+        },
+        { text: 'Actions', value: 'actions', sortable: false },
+      ]
+    },
     formTitle(): string {
       return this.editedIndex === -1 ? 'New Task' : 'Edit Task'
     },
@@ -299,6 +334,12 @@ export default Vue.extend({
   },
 
   methods: {
+    filterOnlyLowText(value: string, search: string, item: IData[]) {
+      return value != null &&
+        search != null &&
+        typeof value === 'string' &&
+        value.toString().toLocaleLowerCase().indexOf(search) !== -1
+    },
     updateDuration(diff: number) {
       this.editedItem.duration = diff / 1000
     },
